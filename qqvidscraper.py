@@ -1,6 +1,8 @@
 from MenuT import MenuT
 import json
-import urllib.request
+import string
+import sys
+import requests
 import re
 from bs4 import BeautifulSoup
 
@@ -22,38 +24,34 @@ class qqVidScraper():
 
     def vididMenu(self):
         mopt = self.menut.showMenu(self.menuid)
-        self.scrapeVideo(mopt)
+        self.writeFile(self.scrapeVideo(mopt))
         self.showMenu()
 
     def scrapeVideo(self, vidid, stdout = True):
         dict = {'vidid': vidid, \
                 'title': None, \
                 'desc': None, \
-                'uploaddate':None,\
+                'userlink':None,\
                 'username':None, \
-                'channel': None, \
                 'origurl':None,\
-                'uploader':None,\
                 'date':None}
         url = self.baseurl + vidid + '.html'
-        page = urllib.request.urlopen(url)
+        page = requests.get(url, timeout=60).content
         # page.geturl() # checks for final url after redirect
         soup = BeautifulSoup(page, 'html.parser')
 
         dict['username'] = soup.find('span', attrs={'class': 'user_name'}).text.strip()
-        dict['userlink'] = soup.find("a", href=re.compile("^http://v.qq.com/vplus/[a-z0-9]*$"))\
-            .text.get('href') # gets the channel url link
 
-        dict['date'] = soup.find('meta', attrs={'itemprop': 'datePublished'}).text.strip()["content"]
-        dict['origurl'] = soup.find('meta', attrs={'itemprop': 'url'}).text.strip()["content"]
-        dict['title'] = soup.find('meta', attrs={'itemprop': 'name'}).text.strip()["content"]
-        dict['desc'] = soup.find("meta", {"name": "description"}).text.strip()["content"]
+        dict['userlink'] = soup.find("a", href=re.compile("^http://v.qq.com/vplus/[a-z0-9]*$"))['href']
 
-        page = urllib.request.urlopen(dict['userlink'].get('href'))
-        dict['uploader'] = BeautifulSoup(page, 'html.parser').html.head.title.text.strip()\
-            .replace('的个人频道 - 视频列表', '', 1)
+        dict['date'] = soup.find('meta', attrs={'itemprop': 'datePublished'})['content']
+        dict['origurl'] = soup.find('meta', attrs={'itemprop': 'url'})['content']
+        dict['title'] = soup.find('meta', attrs={'itemprop': 'name'})['content']
+        dict['desc'] = soup.find("meta", {"name": "description"})['content']
+
+        page = requests.get(dict['userlink'], timeout=60).content
         if(stdout):
-            print("Uploader: " + dict['uploader'])
+            print("Uploader: " + dict['username'])
             print("Channel: " + dict['userlink'])
             print("Upload Date: " + dict['date'])
             print("Description: " + str(dict['desc'])) # checks the value of content, within meta name=description
@@ -63,6 +61,8 @@ class qqVidScraper():
 
     def writeFile(self, data):
         filename = data['title'] + "-" + data['vidid'] + self.fnameappend
+        print(filename)
+        print(data)
         f = open(filename, 'w')
         f.write(self.getJSON(data))
         f.close()
@@ -70,4 +70,4 @@ class qqVidScraper():
     def getJSON(self, data):
         return self.jsonenc.encode({data['vidid']: data})
 
-qqVidScraper().menut.showMenu()
+qqVidScraper().showMenu()
