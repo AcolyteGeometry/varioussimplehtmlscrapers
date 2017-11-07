@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 class qqVidScraper():
 
     baseurl = 'https://v.qq.com/x/page/'
-    fnameappend = '-metadata.txt'
+    fnameappend = '-metadata.json'
     jsonenc = json.JSONEncoder()
     menut = MenuT()
     menu = [["QQ Video Scraper","Select an option:"],["Scrape Video", 1], ["Exit", 2]]
